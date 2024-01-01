@@ -1,4 +1,5 @@
 ﻿using FullStackAuth_WebAPI.Data;
+using FullStackAuth_WebAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -20,34 +21,64 @@ namespace FullStackAuth_WebAPI.Controllers
 
         // GET: api/<IncomesController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IActionResult  Get()
         {
-            return new string[] { "value1", "value2" };
+            var incomes = _context.Incomes.ToList();
+            return Ok(incomes);
         }
 
         // GET api/<IncomesController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public IActionResult Get(int id)
         {
-            return "value";
+            var income = _context.Incomes.Find(id);
+            if (income == null)
+            {
+                return NotFound();
+            }
+            return Ok(income);
         }
 
         // POST api/<IncomesController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public IActionResult Post([FromBody] Income income)
         {
+            _context.Incomes.Add(income);
+            _context.SaveChanges();
+            return StatusCode(201, income);
         }
 
         // PUT api/<IncomesController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public IActionResult Put(int id, [FromBody] Income income)
         {
+            var existingIncome = _context.Expenses.FirstOrDefault(i => i.Id == id);
+            if(existingIncome == null)
+            {
+                return NotFound(id);
+            }
+            else
+            {
+                existingIncome.Name = income.Name;
+                existingIncome.Amount = income.Amount;
+                existingIncome.Date = income.Date;
+                _context.SaveChanges();
+                return StatusCode(200, income);
+            }
         }
 
         // DELETE api/<IncomesController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public IActionResult Delete(int id)
         {
+            var income = _context.Incomes.Find(id);
+            if (income == null)
+            {
+                return NotFound();
+            }
+            _context.Incomes.Remove(income);
+            _context.SaveChanges();
+            return NoContent();
         }
     }
 }
