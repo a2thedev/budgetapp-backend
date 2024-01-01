@@ -9,7 +9,6 @@ namespace FullStackAuth_WebAPI.Data
     {
         public DbSet<Car> Cars { get; set; }
         public DbSet<Expense> Expenses { get; set; }
-
         public DbSet<Income> Incomes { get; set; }
 
         public ApplicationDbContext(DbContextOptions options)
