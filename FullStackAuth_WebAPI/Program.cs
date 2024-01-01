@@ -1,10 +1,12 @@
 using FullStackAuth_WebAPI.ActionFilters;
 using FullStackAuth_WebAPI.Contracts;
+using FullStackAuth_WebAPI.Data;
 using FullStackAuth_WebAPI.Extensions;
 using FullStackAuth_WebAPI.Managers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -31,6 +33,14 @@ namespace FullStackAuth_WebAPI
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
+
+            var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
+                throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                    options.UseMySQL(connectionString, b => b.MigrationsAssembly(typeof
+                        (ApplicationDbContext).Assembly.FullName)));
+
 
             var app = builder.Build();
 
