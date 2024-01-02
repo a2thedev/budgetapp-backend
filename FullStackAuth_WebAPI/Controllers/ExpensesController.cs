@@ -1,4 +1,5 @@
 ﻿using FullStackAuth_WebAPI.Data;
+using FullStackAuth_WebAPI.DataTransferObjects;
 using FullStackAuth_WebAPI.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,11 +22,33 @@ namespace FullStackAuth_WebAPI.Controllers
 
         // GET: api/<ExpenseController>
         [HttpGet]
-        public IActionResult Get()
+        public IActionResult GetAllExpenses()
         {
-            var expenses = _context.Expenses.ToList();
-            return Ok(expenses);
+            try
+            {
+                
+                var expenses = _context.Expenses.Select(e => new ExpenseWithUserDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Amount = e.Amount,
+                    Date = e.Date,
+                    Budgeter = new UserForDisplayDto
+                    {
+                        Id = e.Budgeter.Id,
+                        FirstName = e.Budgeter.FirstName,
+                        LastName = e.Budgeter.LastName,
+                        UserName = e.Budgeter.UserName,
+                    }
+                }).ToList();
+                return StatusCode(200, expenses);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
+            
 
         // GET api/<ExpenseController>/5
         [HttpGet("{id}")]
