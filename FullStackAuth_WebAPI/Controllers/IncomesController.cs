@@ -1,6 +1,10 @@
 ﻿using FullStackAuth_WebAPI.Data;
+using FullStackAuth_WebAPI.DataTransferObjects;
 using FullStackAuth_WebAPI.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -21,17 +25,56 @@ namespace FullStackAuth_WebAPI.Controllers
 
         // GET: api/<IncomesController>
         [HttpGet]
-        public IActionResult  Get()
+        public IActionResult  GetAllIncomes()
         {
-            var incomes = _context.Incomes.ToList();
-            return Ok(incomes);
+            try
+            {
+                var incomes = _context.Incomes.Select(e => new IncomeWithUserDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Amount = e.Amount,
+                    Date = e.Date,
+                    Budgeter = new UserForDisplayDto
+                    {
+                        Id=e.Budgeter.Id,
+                        FirstName=e.Budgeter.FirstName,
+                        LastName=e.Budgeter.LastName,
+                        UserName=e.Budgeter.UserName,
+                    }
+                }).ToList();
+                return StatusCode(200,incomes);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
+        [HttpGet("MyIncomes"),Authorize]
+        public IActionResult GetUsersIncomes()
+        {
+            try
+            {
+                string userId = User.FindFirstValue("id");
+                var incomes = _context.Incomes.Where(e => e.BudgeterId.Equals(userId));
+                return StatusCode(200, incomes);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+           
+
+        
         // GET api/<IncomesController>/5
         [HttpGet("{id}")]
         public IActionResult Get(int id)
         {
-            var income = _context.Incomes.Find(id);
+            try 
+            {
+                var income = _context.Incomes.Include(e => e.Budgeter).FirstOrDefault(e => e.Id == id);
             if (income == null)
             {
                 return NotFound();

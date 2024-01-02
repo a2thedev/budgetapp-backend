@@ -13,7 +13,7 @@ namespace FullStackAuth_WebAPI.Models
         [Required]
         public double Amount { get; set; }
         [Required]
-        public DateOnly Date { get; set; }
+        public DateTime Date { get; set; }
         [Required]
         public int Rating { get; set; }
         [Required]
