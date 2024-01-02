@@ -29,18 +29,18 @@ namespace FullStackAuth_WebAPI.Controllers
         {
             try
             {
-                var incomes = _context.Incomes.Select(e => new IncomeWithUserDto
+                var incomes = _context.Incomes.Select(i => new IncomeWithUserDto
                 {
-                    Id = e.Id,
-                    Name = e.Name,
-                    Amount = e.Amount,
-                    Date = e.Date,
+                    Id = i.Id,
+                    Name = i.Name,
+                    Amount = i.Amount,
+                    Date = i.Date,
                     Budgeter = new UserForDisplayDto
                     {
-                        Id=e.Budgeter.Id,
-                        FirstName=e.Budgeter.FirstName,
-                        LastName=e.Budgeter.LastName,
-                        UserName=e.Budgeter.UserName,
+                        Id=i.Budgeter.Id,
+                        FirstName=i.Budgeter.FirstName,
+                        LastName=i.Budgeter.LastName,
+                        UserName=i.Budgeter.UserName,
                     }
                 }).ToList();
                 return StatusCode(200,incomes);
@@ -57,7 +57,7 @@ namespace FullStackAuth_WebAPI.Controllers
             try
             {
                 string userId = User.FindFirstValue("id");
-                var incomes = _context.Incomes.Where(e => e.BudgeterId.Equals(userId));
+                var incomes = _context.Incomes.Where(i => i.BudgeterId.Equals(userId));
                 return StatusCode(200, incomes);
             }
             catch (Exception ex)
@@ -72,56 +72,115 @@ namespace FullStackAuth_WebAPI.Controllers
         [HttpGet("{id}")]
         public IActionResult Get(int id)
         {
-            try 
+            try
             {
-                var income = _context.Incomes.Include(e => e.Budgeter).FirstOrDefault(e => e.Id == id);
-            if (income == null)
-            {
-                return NotFound();
+                var income = _context.Incomes.Include(i => i.Budgeter).FirstOrDefault(i => i.Id == id);
+                if (income == null)
+                {
+                    return NotFound();
+                }
+                return StatusCode(200, income);
             }
-            return Ok(income);
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
         // POST api/<IncomesController>
-        [HttpPost]
+        [HttpPost, Authorize]
         public IActionResult Post([FromBody] Income income)
         {
-            _context.Incomes.Add(income);
-            _context.SaveChanges();
-            return StatusCode(201, income);
+            try
+            {
+                string userId = User.FindFirstValue("id");
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized();
+                }
+
+                income.BudgeterId = userId;
+
+                _context.Incomes.Add(income);
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+                _context.SaveChanges();
+                return StatusCode(201, income);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
 
         // PUT api/<IncomesController>/5
-        [HttpPut("{id}")]
+        [HttpPut("{id}"), Authorize]
         public IActionResult Put(int id, [FromBody] Income income)
         {
-            var existingIncome = _context.Expenses.FirstOrDefault(i => i.Id == id);
-            if(existingIncome == null)
+            try
             {
-                return NotFound(id);
-            }
-            else
-            {
+
+
+                Income existingIncome = _context.Incomes.Include(i => i.Budgeter).FirstOrDefault(i => i.Id == id);
+
+                if (existingIncome == null)
+                {
+                    return NotFound();
+                }
+
+                var userId = User.FindFirstValue("id");
+                if (string.IsNullOrEmpty(userId) || income.BudgeterId != userId)
+                {
+                    return Unauthorized();
+                }
+
+                existingIncome.BudgeterId = userId;
+                existingIncome.Budgeter = _context.Users.Find(userId);
                 existingIncome.Name = income.Name;
                 existingIncome.Amount = income.Amount;
                 existingIncome.Date = income.Date;
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
                 _context.SaveChanges();
                 return StatusCode(200, income);
             }
+            catch(Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+            
         }
 
         // DELETE api/<IncomesController>/5
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}"), Authorize]
         public IActionResult Delete(int id)
         {
-            var income = _context.Incomes.Find(id);
-            if (income == null)
+            try
             {
-                return NotFound();
+
+                Income income = _context.Incomes.FirstOrDefault(i => i.Id == id);
+                if (income == null)
+                {
+                    return NotFound();
+                }
+
+                var userId = User.FindFirstValue("id");
+                if (string.IsNullOrEmpty(userId) || income.BudgeterId != userId)
+                {
+                    return Unauthorized();
+                }
+                _context.Incomes.Remove(income);
+                _context.SaveChanges();
+                return StatusCode(204);
             }
-            _context.Incomes.Remove(income);
-            _context.SaveChanges();
-            return NoContent();
+            catch(Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
         }
     }
 }
